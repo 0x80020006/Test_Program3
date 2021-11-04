@@ -16,11 +16,14 @@ namespace Test_Program3
         OpenFileDialog ofd;
         List<string> filesList;
         PictureBox[] pbList;
+        bool imgLoad;
 
-        static readonly int MS_WIDTH = 500;
+        static readonly int MS_WIDTH  = 500;
         static readonly int MS_HEIGHT = 470;
-        static readonly int CS_WIDTH = 800;
+        static readonly int CS_WIDTH  = 800;
         static readonly int CS_HEIGHT = 770;
+        static readonly int IMG_BETWEEN = 10;
+        static readonly int BAR_HEIGHT = SystemInformation.CaptionHeight + SystemInformation.MenuHeight;
 
         public MainForm()
         {
@@ -29,11 +32,14 @@ namespace Test_Program3
             Controls.Add(menuStrip);            
             MinimumSize = new Size(MS_WIDTH, MS_HEIGHT);
             Size = new Size(CS_WIDTH, CS_HEIGHT);
+            MouseWheel += new MouseEventHandler(MouseWheelControl);
             DoubleBuffered = true;
         }
 
         void MainForm_Load(object sender, EventArgs e)
         {
+            SizeChanged += Window_SizeChanged;
+
             ToolStripMenuItem menuFile = new ToolStripMenuItem();
             menuFile.Text = "ファイル(&F)";
             menuStrip.Items.Add(menuFile);
@@ -52,20 +58,25 @@ namespace Test_Program3
 
         void Open_Click(object sender, EventArgs e)
         {
+
+            //コントロールが存在している場合にコントロールを削除する処理を追加すること
+
             ofd = new OpenFileDialog();
             ofd.Filter = "Image File(*.bmp,*.jpg,*.png)|*.bmp;*.jpg;*.png|Bitmap(*.bmp)|*.bmp|Jpeg(*.jpg)|*.jpg|PNG(*.png)|*.png";
             if (ofd.ShowDialog() == DialogResult.OK)
             {
+                if(imgLoad == true)
+                {
+                    //PictureBoxをRemoveする処理を入れる
+                }
                 Console.WriteLine($"読み込みファイル:{ofd.FileName}");
                 string folderPath = Path.GetDirectoryName(ofd.FileName);
                 IEnumerable<string> files = Directory.EnumerateFiles(folderPath).Where(str => str.EndsWith(".bmp") || str.EndsWith(".jpg") || str.EndsWith(".png"));
                 filesList = files.ToList();
                 var sortQuery = filesList.OrderBy(s => s.Length);
                 filesList = sortQuery.ToList();
-                //fNumber = filesList.IndexOf(ofd.FileName);
                 Console.WriteLine($"{filesList.Count}");
                 fNumber = filesList.IndexOf(ofd.FileName);
-
                 pbList = new PictureBox[filesList.Count];
                 for(int i = 0; i < pbList.Length; i++)
                 {
@@ -74,27 +85,90 @@ namespace Test_Program3
                                         
                     pbList[i] = new PictureBox();
                     pbList[i].BackColor = Color.Blue;
-                    pbList[i].Location = new Point(ClientSize.Width / 2 - pbList[i].Width / 2 + (pbList[i].Width + 10) * (i - fNumber), ClientSize.Height / 2 - pbList[i].Height / 2);
                     Controls.Add(pbList[i]);
-                    Bitmap b = new Bitmap(pbList[i].Width, pbList[i].Height);
-                    Graphics g = Graphics.FromImage(b);
                     Image img = Image.FromFile(fPath);
 
-                    float rWidth = Width / img.Width;
-                    float rHeight = Height / img.Height;
-                    float r = Math.Min(rWidth, rHeight);
+                    float iW  = img.Width;
+                    float iH  = img.Height;
+                    Console.WriteLine($"{iW},{iH}");
+                    float cW = Width;
+                    float cH = Height - BAR_HEIGHT;
+                    Console.WriteLine($"{cW},{cH}");
 
-                    g.DrawImage(img, 0, 0);
+
+                    float rW = cW / iW;
+                    float rH = cH / iH;
+                    float r = Math.Min(rW, rH);
+                    Console.WriteLine($"{r}");
+                    int mW = (int)(img.Width * r);
+                    int mH = (int)(img.Height * r);
+
+                    pbList[i].Width  = mW;
+                    pbList[i].Height = mH;
+                    pbList[i].Location = new Point(ClientSize.Width / 2 - pbList[i].Width / 2 + (pbList[i].Width + IMG_BETWEEN) * (i - fNumber), SystemInformation.MenuHeight + (ClientSize.Height - SystemInformation.MenuHeight) / 2 - pbList[i].Height / 2);
+                    
+                    Bitmap b = new Bitmap(mW, mH);
+                    Graphics g = Graphics.FromImage(b);
+                    
+                    g.DrawImage(img, 0, 0, mW, mH);
+                    
                     img.Dispose();
                     g.Dispose();
+                    
                     pbList[i].Image = b;
                 }
+                imgLoad = true;
             }
         }
 
         void Close_Click(object sender, EventArgs e)
         {
             Application.Exit();
+        }
+
+        void MouseWheelControl(object sender, MouseEventArgs e)
+        {
+            if (imgLoad != true)
+            {
+
+            }
+            else
+            {
+
+                if (e.Delta > 0 && fNumber > 0)
+                {
+                    fNumber -= 1;
+                    Console.WriteLine($"{fNumber}");
+                }
+                else if (e.Delta < 0 && fNumber < filesList.Count - 1)
+                {
+                    fNumber += 1;
+                    Console.WriteLine($"{fNumber}");
+                }
+                for (int i = 0; i < pbList.Length; i++)
+                {
+                    pbList[i].Location = new Point(ClientSize.Width / 2 - pbList[i].Width / 2 + (pbList[i].Width + IMG_BETWEEN) * (i - fNumber), SystemInformation.MenuHeight + (ClientSize.Height - SystemInformation.MenuHeight) / 2 - pbList[i].Height / 2);
+                    Invalidate();
+                }
+            }
+
+        }
+
+        private void Window_SizeChanged(object sender, EventArgs e)
+        {
+            if (imgLoad != true)
+            {
+
+            }
+            else
+            {
+                for (int i = 0; i < pbList.Length; i++)
+                {
+                    pbList[i].Location = new Point(ClientSize.Width / 2 - pbList[i].Width / 2 + (pbList[i].Width + IMG_BETWEEN) * (i - fNumber), SystemInformation.MenuHeight + (ClientSize.Height - SystemInformation.MenuHeight) / 2 - pbList[i].Height / 2);
+                    Invalidate();
+                }
+            }
+            Console.WriteLine($"{Width},{Height}");
         }
 
     }
