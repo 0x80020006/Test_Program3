@@ -28,7 +28,8 @@ namespace Test_Program3
         static readonly int CM_HEIGHT = 1080;
         static readonly int IMG_BETWEEN = 10;
         static readonly int BAR_HEIGHT = SystemInformation.CaptionHeight + SystemInformation.MenuHeight;
-        static readonly int FILE_RANGE = 5;
+        static readonly int FILE_RANGE = 2
+            ;
 
         public MainForm()
         {
@@ -63,8 +64,6 @@ namespace Test_Program3
 
         void Open_Click(object sender, EventArgs e)
         {
-            //コントロールが存在している場合にコントロールを削除する処理を追加すること
-
             ofd = new OpenFileDialog();
             ofd.Filter = "Image File(*.bmp,*.jpg,*.png)|*.bmp;*.jpg;*.png|Bitmap(*.bmp)|*.bmp|Jpeg(*.jpg)|*.jpg|PNG(*.png)|*.png";
             if (ofd.ShowDialog() == DialogResult.OK)
@@ -123,7 +122,10 @@ namespace Test_Program3
                     FileRange_Math();
                 }
 
-                Img_Load();
+                if (this.Contains(pbList[fNumber]) == false)
+                {
+                    Img_Load();
+                }
                 PBList_Location();
 
             }
@@ -138,7 +140,7 @@ namespace Test_Program3
             }
             else
             {
-                PBList_Location();
+                Img_Load();
             }
             Console.WriteLine($"{Width},{Height}");
         }
@@ -177,16 +179,23 @@ namespace Test_Program3
                 if (i >= 0 && i < filesList.Count)
                 {
 
-                    if (this.Contains(pbList[i]) == false)
+                    //if (this.Contains(pbList[i]) == false)
+                    //{
+                    if (this.Contains(pbList[i]) == true)
                     {
-
-                        fPath = filesList[i];
+                        pbList[i].Image.Dispose();
+                        pbList[i].Image = null;
+                        Controls.Remove(pbList[i]);
+                    }
+                    fPath = filesList[i];
                         Console.WriteLine($"{fPath}");
 
                         pbList[i] = new PictureBox();
                         pbList[i].BackColor = Color.Blue;
                         Controls.Add(pbList[i]);
-                        Image img = Image.FromFile(fPath);
+                    //Image img = Image.FromFile(fPath);
+                    FileStream fs = File.OpenRead(fPath);
+                    Image img = Image.FromStream(fs, false, false);
 
                         float iW = img.Width;
                         float iH = img.Height;
@@ -216,7 +225,8 @@ namespace Test_Program3
                         g.Dispose();
 
                         pbList[i].Image = b;
-                    }
+                    Invalidate();
+                    //}
                 }
             }
         }
